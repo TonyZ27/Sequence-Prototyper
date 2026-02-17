@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      padding: 20px;
+      margin: 0;
+      color: #333;
+    }
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: block;
+      color: #333;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 8px;
+    }
+    input[type="number"], select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+    input:focus, select:focus {
+      outline: 2px solid #18A0FB;
+      border-color: transparent;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    button {
+      background-color: #18A0FB;
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:hover {
+      background-color: #0D8ADB;
+    }
+    .hidden {
+      display: none;
+    }
+    .sub-section {
+      padding-left: 24px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <label class="label">INTERACTION TYPE</label>
+  <div class="row">
+    <select id="interactionType">
+      <option value="NAVIGATE">Navigate To (Frames)</option>
+      <option value="SWAP">Change To (Variants)</option>
+    </select>
+  </div>
+
+  <label class="label">DELAY (MS)</label>
+  <div class="row">
+    <input type="number" id="delayTime" value="800" min="1">
+  </div>
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="useSmartAnimate" checked>
+    <label for="useSmartAnimate">Use Smart Animate</label>
+  </div>
+
+  <div id="animSettings" class="sub-section">
+    <label class="label">ANIMATION DURATION (MS)</label>
+    <div class="row">
+      <input type="number" id="animDuration" value="300" min="1">
+    </div>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid #e5e5e5; margin: 16px 0;">
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="loopFrames">
+    <label for="loopFrames">Link last frame to first</label>
+  </div>
+
+  <button id="create">Sequence Frames</button>
+
+  <script>
+    // Toggle Animation Input visibility
+    const smartAnimCheck = document.getElementById('useSmartAnimate');
+    const animSettings = document.getElementById('animSettings');
+
+    smartAnimCheck.onchange = () => {
+      if (smartAnimCheck.checked) {
+        animSettings.classList.remove('hidden');
+      } else {
+        animSettings.classList.add('hidden');
+      }
+    };
+
+    // Handle Create Button
+    document.getElementById('create').onclick = () => {
+      const delay = parseInt(document.getElementById('delayTime').value, 10);
+      const useSmartAnimate = document.getElementById('useSmartAnimate').checked;
+      const animDuration = parseInt(document.getElementById('animDuration').value, 10);
+      const interactionType = document.getElementById('interactionType').value;
+      const loop = document.getElementById('loopFrames').checked;
+
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'create-links',
+          delay,
+          useSmartAnimate,
+          animDuration,
+          interactionType,
+          loop
+        } 
+      }, '*');
+    }
+  </script>
+</body>
+</html>
