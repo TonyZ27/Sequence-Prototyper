@@ -1,4 +1,3 @@
-// code.js
 console.log("Plugin starting...");
 
 figma.showUI(__html__, { width: 260, height: 450 });
@@ -13,6 +12,17 @@ figma.ui.onmessage = msg => {
       figma.notify("❌ Please select at least 2 frames or variants.");
       return;
     }
+
+    // --- NEW VALIDATION FIX ---
+    // Prevent users (and reviewers) from selecting shapes that don't support After Delay
+    const validTypes = ['FRAME', 'COMPONENT', 'COMPONENT_SET', 'INSTANCE', 'SECTION'];
+    const invalidNodes = selection.filter(node => !validTypes.includes(node.type));
+    
+    if (invalidNodes.length > 0) {
+      figma.notify("❌ 'After Delay' only works on Frames, Components, or Instances. Please deselect basic shapes.");
+      return;
+    }
+    // --------------------------
 
     // Sort Selection (Top-Left to Bottom-Right)
     selection.sort((a, b) => {
@@ -57,11 +67,10 @@ figma.ui.onmessage = msg => {
 
       if (msg.interactionType === 'SWAP') {
         // --- CASE A: CHANGE TO (VARIANTS) ---
-        // FIX: The correct navigation type is "CHANGE_TO", not "SWAP"
         actionNode = {
           type: 'NODE',
           destinationId: nextNode.id,
-          navigation: 'CHANGE_TO', // <--- THE KEY FIX
+          navigation: 'CHANGE_TO', 
           transition: transitionObj,
           resetVideoPosition: false
         };
