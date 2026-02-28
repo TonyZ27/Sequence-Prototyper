@@ -18,7 +18,7 @@ Building loading sequences, complex micro-interactions, or step-by-step onboardi
 
 ## 🚀 Installation
 
-**Install via Figma Community** : *[Link to Figma Community - Coming Soon]*
+**Install via Figma Community** : *https://www.figma.com/community/plugin/1605529378886881954*
 
 
 
