@@ -2,7 +2,7 @@ console.log("Plugin starting...");
 
 figma.showUI(__html__, { width: 260, height: 450 });
 
-figma.ui.onmessage = msg => {
+figma.ui.onmessage = async (msg) => {
 
   if (msg.type === 'create-links') {
     
@@ -13,22 +13,17 @@ figma.ui.onmessage = msg => {
       return;
     }
 
-    // --- NEW VALIDATION FIX ---
-    // Prevent users (and reviewers) from selecting shapes that don't support After Delay
     const validTypes = ['FRAME', 'COMPONENT', 'COMPONENT_SET', 'INSTANCE', 'SECTION'];
     const invalidNodes = selection.filter(node => !validTypes.includes(node.type));
     
     if (invalidNodes.length > 0) {
-      figma.notify("❌ 'After Delay' only works on Frames, Components, or Instances. Please deselect basic shapes.");
+      figma.notify("❌ 'After Delay' only works on Frames, Components, or Instances.");
       return;
     }
-    // --------------------------
 
-    // Sort Selection (Top-Left to Bottom-Right)
+    // Sort Top-Left to Bottom-Right
     selection.sort((a, b) => {
-      if (Math.abs(a.y - b.y) > 50) { 
-        return a.y - b.y;
-      }
+      if (Math.abs(a.y - b.y) > 50) return a.y - b.y;
       return a.x - b.x;
     });
 
@@ -39,34 +34,22 @@ figma.ui.onmessage = msg => {
       const currentNode = selection[i];
       let nextNode = selection[i + 1];
 
-      // Handle Looping
       if (i === selection.length - 1) {
-        if (msg.loop) {
-          nextNode = selection[0];
-        } else {
-          break;
-        }
+        if (msg.loop) nextNode = selection[0];
+        else break;
       }
 
       if (!nextNode || nextNode.id === currentNode.id) continue;
 
-      // 1. Prepare Transition
-      let transitionObj = null;
-      if (msg.useSmartAnimate) {
-        transitionObj = {
-          type: 'SMART_ANIMATE',
-          easing: { type: 'EASE_OUT' },
-          duration: msg.animDuration / 1000
-        };
-      } else {
-        transitionObj = { type: 'INSTANT' };
-      }
+      let transitionObj = msg.useSmartAnimate 
+        ? { type: 'SMART_ANIMATE', easing: { type: 'EASE_OUT' }, duration: msg.animDuration / 1000 }
+        : { type: 'INSTANT' };
 
-      // 2. Prepare Action Object
-      let actionNode = {};
+      // We must define action Node completely independent of the other.
+      let actionNode;
 
       if (msg.interactionType === 'SWAP') {
-        // --- CASE A: CHANGE TO (VARIANTS) ---
+        // SWAP (CHANGE_TO) action
         actionNode = {
           type: 'NODE',
           destinationId: nextNode.id,
@@ -75,7 +58,7 @@ figma.ui.onmessage = msg => {
           resetVideoPosition: false
         };
       } else {
-        // --- CASE B: NAVIGATE TO (FRAMES) ---
+        // NAVIGATE action
         actionNode = {
           type: 'NODE',
           destinationId: nextNode.id,
@@ -86,27 +69,23 @@ figma.ui.onmessage = msg => {
         };
       }
 
-      // 3. Create Reaction
+      // The critical structure: trigger + actions array
       const reaction = {
-        trigger: {
-          type: 'AFTER_TIMEOUT',
-          timeout: msg.delay / 1000 
-        },
-        actions: [actionNode]
+        trigger: { type: 'AFTER_TIMEOUT', timeout: msg.delay / 1000 },
+        actions: [actionNode] 
       };
 
       try {
-        currentNode.reactions = [reaction];
+        await currentNode.setReactionsAsync([reaction]);
         linksCreated++;
       } catch (err) {
         console.error("Failed on node:", currentNode.name, err);
-        console.log("FAILED JSON:", JSON.stringify(reaction));
         errorCount++;
       }
     }
 
     if (errorCount > 0) {
-      figma.notify(`⚠️ Sequenced ${linksCreated} frames, but ${errorCount} failed. Check console.`);
+      figma.notify(`⚠️ Sequenced ${linksCreated} frames, but ${errorCount} failed.`);
     } else {
       figma.notify(`✅ Sequenced ${linksCreated} frames successfully!`);
     }
